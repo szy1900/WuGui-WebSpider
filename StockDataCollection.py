@@ -25,9 +25,15 @@ if __name__ == '__main__':
         html = result.content
         html_doc = str(html, 'utf-8')
         tree = etree.HTML(html_doc)
-        csrf_token2 = tree.xpath("//input[@name='csrfmiddlewaretoken']/@value")
-        csrf_token2 = str(csrf_token2[0])
-        print(csrf_token2)
+        csrf_token = tree.xpath("//input[@name='csrfmiddlewaretoken']/@value")
+        csrf_token = str(csrf_token[0])
+        # print(csrf_token2)
+        listNames = tree.xpath("//div[@class='item']/span[@class='name']/text()")
+        dictIterm = {}
+        for name in listNames:
+            value = tree.xpath(f'//div[@class="item"]/span[contains(text(), "{name}")]/following-sibling::span[1]/text()')
+            dictIterm[name] = str(value[0])
+        ItermJson = json.dumps(dictIterm,indent=4,ensure_ascii=False)
 
         HEADERS = {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/86.0.4240.198 Safari/537.36',
@@ -39,15 +45,17 @@ if __name__ == '__main__':
             'referer': request_url,
             'sec-fetch-mode': 'cors',
             'x-requested-with': 'XMLHttpRequest',
-            'x-csrftoken': csrf_token2,
+            'x-csrftoken': csrf_token,
             'cookie':'csrftoken=nVa6eiP06hDlM1zyk6Lw3mO5ary4w3RPMtkFPDkkMT5rEYJpyRbygdsLyPS64559; Hm_lvt_eac4547169afd7579f80d05491ed45ef=1607913699; Hm_lpvt_eac4547169afd7579f80d05491ed45ef=1607929004'
         }
         login_req = s.post('https://androidinvest.com/stock/overviewsummary/sh600031/', headers=HEADERS)
         josndata = re.search('"success": true, (.+)', login_req.text).group(1)
         josndata='{'+josndata
-        json_object  = json.dumps(eval(josndata), indent = 4)
+        json_object  = json.dumps(eval(josndata), indent = 4,ensure_ascii=False)
         with open(f"StockDataset/stockdata/{stock}.json", "w") as outfile:
             outfile.write(json_object)
+        with open(f"StockDataset/stockdata/{stock}_Iterm.json", "w") as outfile2:
+            outfile2.write(ItermJson)
         print(login_req.text)
         print('a')
         if stock != stockList[-1]:
